@@ -22,7 +22,7 @@ import org.apache.hadoop.thirdparty.com.google.common.annotations.VisibleForTest
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
-import org.apache.commons.compress.archivers.ArchiveEntry;
+import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.BlockLocation;
@@ -326,25 +326,25 @@ public class FrameworkUploader implements Runnable {
 
   @VisibleForTesting
   void buildPackage()
-      throws IOException, UploaderException, InterruptedException {
+          throws IOException, UploaderException, InterruptedException {
     beginUpload();
     LOG.info("Compressing tarball");
     try (TarArchiveOutputStream out = new TarArchiveOutputStream(
-        targetStream)) {
+            targetStream)) {
+      // Workaround for the compress issue present from 1.21: COMPRESS-587
+      out.setBigNumberMode(TarArchiveOutputStream.BIGNUMBER_STAR);
       for (String fullPath : filteredInputFiles) {
         LOG.info("Adding " + fullPath);
         File file = new File(fullPath);
         try (FileInputStream inputStream = new FileInputStream(file)) {
-          ArchiveEntry entry = out.createArchiveEntry(file, file.getName());
+          TarArchiveEntry entry = out.createArchiveEntry(file, file.getName());
           out.putArchiveEntry(entry);
           IOUtils.copyBytes(inputStream, out, 1024 * 1024);
           out.closeArchiveEntry();
         }
       }
-
       // Necessary to see proper replication counts in endUpload()
       fsDataStream.hflush();
-
       endUpload();
     } finally {
       if (targetStream != null) {
