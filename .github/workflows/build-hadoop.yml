@@ -38,7 +38,7 @@ jobs:
       - name: Checkout Hadoop
         uses: actions/checkout@v4
         with:
-          repository: apache/hadoop
+          repository: UrbanOS-Public/urbanos-hadoop
           path: hadoop-3.3 # Store in $GITHUB_WORKSPACE/other-repo
           ref: branch-3.3
           
